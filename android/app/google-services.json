@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1064423487723",
+    "project_id": "feecra-67e28",
+    "storage_bucket": "feecra-67e28.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1064423487723:android:87abbe79430dd9e13c66ae",
+        "android_client_info": {
+          "package_name": "com.example.feecra_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDITxAgweY8Gs45peua8YP_ACUGGtOwdic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
