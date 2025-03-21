@@ -1,3 +1,4 @@
+import 'package:feecra_project/Screens/plant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
@@ -19,7 +20,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
-    const WeatherScreen(),
+    const PlantScreen(),
     VanesScreen(),
     HistoricScreen(),
     capteurScreen(),
@@ -29,16 +30,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    User? user = FirebaseAuth.instance.currentUser;
+    //User? user = FirebaseAuth.instance.currentUser;
+    var user = true;
     void _logout() async {
-      await FirebaseAuth.instance.signOut();
+      //await FirebaseAuth.instance.signOut();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => MyHomePage()),
+            builder: (context) => LoginScreen()),
       );
     }
-    if (user != null) {
+    if (user) {
       // User is signed in. Navigate to the home screen.
       return Scaffold(
         resizeToAvoidBottomInset: false,
@@ -80,9 +82,9 @@ class _MyHomePageState extends State<MyHomePage> {
           items: const [
             BottomNavigationBarItem(
               icon: Icon(
-                Icons.cloud,
+                Icons.local_florist,
               ),
-              label: 'météo',
+              label: 'Plant',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.water_drop),

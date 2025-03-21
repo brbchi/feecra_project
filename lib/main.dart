@@ -6,9 +6,9 @@ import 'home.dart';
 import 'login.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  //WidgetsFlutterBinding.ensureInitialized();
   // Enable persistence
-  await Firebase.initializeApp();
+  //await Firebase.initializeApp();
   runApp(const MyApp());
 }
 

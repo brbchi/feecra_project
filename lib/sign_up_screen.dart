@@ -1,76 +1,28 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-// import 'package:firebase_auth/firebase_auth.dart'; // Uncomment if using Firebase
-import 'home.dart'; // Your HomePage
-import 'sign_up_screen.dart'; // Import the new sign-up screen
 
-void main() => runApp(const MaterialApp(
-  debugShowCheckedModeBanner: false,
-  home: LoginScreen(),
-));
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({Key? key}) : super(key: key);
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-void _showErrorDialog(BuildContext context, String message) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      Timer(const Duration(seconds: 10), () {
-        Navigator.of(context).pop();
-      });
-      return AlertDialog(
-        title: const Text("Error"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text("OK"),
-          )
-        ],
-      );
-    },
-  );
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  // final auth = FirebaseAuth.instance;
+class _SignUpScreenState extends State<SignUpScreen> {
   late String email;
   late String pass;
-
-  @override
-  void initState() {
-    super.initState();
-    checkCurrentUser();
-  }
-
-  void checkCurrentUser() async {
-    // If using Firebase, you'd do something like:
-    // var user = FirebaseAuth.instance.currentUser;
-    // If 'user' is not null, they're logged in => push to Home screen
-    var user = email; // Just a placeholder in your example
-    if (user == email) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MyHomePage()),
-      );
-    }
-  }
+  late String confirmPass;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Same white background as login
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Column(
-          children: <Widget>[
-            // Top background image & "Login" text
+          children: [
+            // ------------------------------------------------
+            // Top background image & "Sign Up" text
+            // ------------------------------------------------
             SizedBox(
               height: 400,
               child: Stack(
@@ -87,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     right: 0,
                     child: Center(
                       child: Text(
-                        "Login",
+                        "Sign Up",
                         style: TextStyle(
                           color: Colors.green,
                           fontSize: 35,
@@ -100,12 +52,14 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // Fields and buttons
+            // ------------------------------------------------
+            // Form fields (Email, Password, Confirm Password)
+            // ------------------------------------------------
             Padding(
               padding: const EdgeInsets.all(30.0),
               child: Column(
-                children: <Widget>[
-                  // TextFields
+                children: [
+                  // Container with shadow and white background
                   Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
@@ -120,8 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: Column(
-                      children: <Widget>[
-                        // Email
+                      children: [
+                        // Email field
                         Container(
                           padding: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
@@ -130,23 +84,43 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           child: TextField(
-                            onChanged: (value) => email = value,
+                            onChanged: (val) => email = val,
                             decoration: InputDecoration(
                               border: InputBorder.none,
-                              hintText: "Email or Phone number",
+                              hintText: "Email",
                               hintStyle: TextStyle(color: Colors.grey[400]),
                             ),
                           ),
                         ),
-                        // Password
+
+                        // Password field
+                        Container(
+                          padding: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(color: Colors.grey),
+                            ),
+                          ),
+                          child: TextField(
+                            obscureText: true,
+                            onChanged: (val) => pass = val,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Password",
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                            ),
+                          ),
+                        ),
+
+                        // Confirm Password field
                         Container(
                           padding: const EdgeInsets.all(8.0),
                           child: TextField(
                             obscureText: true,
-                            onChanged: (value) => pass = value,
+                            onChanged: (val) => confirmPass = val,
                             decoration: InputDecoration(
                               border: InputBorder.none,
-                              hintText: "Password",
+                              hintText: "Confirm Password",
                               hintStyle: TextStyle(color: Colors.grey[400]),
                             ),
                           ),
@@ -157,7 +131,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 30),
 
-                  // Login Button
+                  // ------------------------------------------------
+                  // Sign Up Button with gradient
+                  // ------------------------------------------------
                   Container(
                     height: 50,
                     decoration: BoxDecoration(
@@ -172,29 +148,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: SizedBox(
                       width: 400,
                       child: ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            // Placeholder login logic
-                            if (email.isNotEmpty && pass.isNotEmpty) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MyHomePage(),
-                                ),
-                              );
-                            } else {
-                              throw Exception("Invalid credentials!");
-                            }
-                          } catch (e) {
-                            _showErrorDialog(context, e.toString());
-                          }
+                        onPressed: () {
+                          // Your sign-up logic goes here.
+                          // For now, just pop back to the login
+                          Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           elevation: 0,
                         ),
                         child: const Text(
-                          "Login",
+                          "Create Account",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -204,24 +168,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
 
-                  // SIGN-UP BUTTON
+                  // ------------------------------------------------
+                  // Already have an account? Button
+                  // ------------------------------------------------
                   SizedBox(
                     width: 400,
                     height: 45,
                     child: OutlinedButton(
                       onPressed: () {
-                        // Navigate to Sign Up screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignUpScreen(),
-                          ),
-                        );
+                        // Just pop this screen to go back to the login screen
+                        Navigator.pop(context);
                       },
                       child: const Text(
-                        "Sign Up",
+                        "Already have an account? Login",
                         style: TextStyle(fontSize: 16),
                       ),
                     ),
@@ -229,13 +190,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 70),
 
+                  // ------------------------------------------------
                   // Bottom image
-                  const Image(
-                    image: AssetImage('assets/images/7.jpg'),
-                  ),
+                  // ------------------------------------------------
+                  
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),

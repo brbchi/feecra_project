@@ -21,11 +21,11 @@ class _capteurScreenState extends State<capteurScreen> {
   @override
   void initState() {
     super.initState();
-    initializeNotifications();
-    getHumidity();
-    getsoil_moisture();
-    gettemperature();
-    getwater_level();
+  //  initializeNotifications();
+   // getHumidity();
+   // getsoil_moisture();
+  //  gettemperature();
+ //   getwater_level();
 
   }
 
@@ -55,57 +55,57 @@ class _capteurScreenState extends State<capteurScreen> {
 
 
 
-  void getHumidity() {
-    DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/humidity");
-    reference.onValue.listen((event) {
-      setState(() {
-        humidityValue = event.snapshot.value.toString();
-        isLoading = false;
+  //void getHumidity() {
+   // DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/humidity");
+   // reference.onValue.listen((event) {
+    //  setState(() {
+    //    humidityValue = event.snapshot.value.toString();
+    //    isLoading = false;
         // Check if humidity is low (e.g., less than 30%)
-        if (humidityValue.isNotEmpty && double.parse(humidityValue) < 30) {
-          showNotification('Low Humidity', 'The humidity level is low.');
-        }
-      });
-    });
-  }
+     //   if (humidityValue.isNotEmpty && double.parse(humidityValue) < 30) {
+     //     showNotification('Low Humidity', 'The humidity level is low.');
+     //   }
+     // });
+   // });
+ // }
 
-  void getsoil_moisture() {
-    DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/soil_moisture");
-    reference.onValue.listen((event) {
-      setState(() {
-        if (soil_moistureValue.isNotEmpty && double.parse(soil_moistureValue) == 0) {
-          showNotification('soil moisture', 'Your plante need water');
-        }
-        soil_moistureValue = event.snapshot.value.toString();
-        isLoading = false;
+  //void getsoil_moisture() {
+ //   DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/soil_moisture");
+   // reference.onValue.listen((event) {
+  //    setState(() {
+   //     if (soil_moistureValue.isNotEmpty && double.parse(soil_moistureValue) == 0) {
+  //        showNotification('soil moisture', 'Your plante need water');
+   //     }
+ //       soil_moistureValue = event.snapshot.value.toString();
+  //      isLoading = false;
 
-      });
-    });
-  }
-  void gettemperature() {
-    DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/temperature");
-    reference.onValue.listen((event) {
-      setState(() {
-        temperatureValue = event.snapshot.value.toString();
-        isLoading = false;
-        if (temperatureValue.isNotEmpty && double.parse(temperatureValue) > 20) {
-          showNotification('Temperateur is very high', 'Temperateur is very high you need to irrigation');
-        }
-      });
-    });
-  }
-  void getwater_level() {
-    DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/water_level");
-    reference.onValue.listen((event) {
-      setState(() {
-        water_levelValue = event.snapshot.value.toString();
-        isLoading = false;
-        if (water_levelValue.isNotEmpty && double.parse(water_levelValue) < 20) {
-          showNotification('Low Water Level', 'The water level is low.');
-        }
-      });
-    });
-  }
+   // });
+  //  });
+ // }
+ // void gettemperature() {
+ //   DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/temperature");
+ //   reference.onValue.listen((event) {
+     // setState(() {
+  //      temperatureValue = event.snapshot.value.toString();
+  //      isLoading = false;
+ //       if (temperatureValue.isNotEmpty && double.parse(temperatureValue) > 20) {
+   //       showNotification('Temperateur is very high', 'Temperateur is very high you need to irrigation');
+  //      }
+  //    });
+ //   });
+ // }
+ // void getwater_level() {
+  //  DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/water_level");
+  //  reference.onValue.listen((event) {
+  //    setState(() {
+  //      water_levelValue = event.snapshot.value.toString();
+   //     isLoading = false;
+  //     if (water_levelValue.isNotEmpty && double.parse(water_levelValue) < 20) {
+    //      showNotification('Low Water Level', 'The water level is low.');
+    //    }
+   //   });
+  //  });
+//  }
   // Define a function to handle the card tap
   void _handleCardTap(int index, String sensorImg, String name, String Volt, String Current, String rt, String rh, String type ) {
     setState(() {

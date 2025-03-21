@@ -53,6 +53,7 @@ dev_dependencies:
   syncfusion_flutter_gauges: ^28.2.9
   connectivity_plus: ^5.0.2
   awesome_dialog: ^3.2.0
+  mobile_scanner: ^6.0.7
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
