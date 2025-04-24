@@ -40,11 +40,11 @@ dev_dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   water_bottle: ^0.0.7
-  firebase_auth: ^4.15.3
-  firebase_core: ^2.24.2
-  firebase_database: ^10.4.5
-  cloud_firestore: ^4.15.5
-  firebase_messaging: ^14.7.10
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.2
+  firebase_database:
+  cloud_firestore:
+  firebase_messaging:
   flutter_local_notifications: ^18.0.1
   http: ^0.13.6
   shared_preferences: ^2.2.2
