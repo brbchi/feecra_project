@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-// import 'package:firebase_auth/firebase_auth.dart'; // Uncomment if using Firebase
+import 'package:firebase_auth/firebase_auth.dart'; // Uncommented for Firebase
 import 'home.dart'; // Your HomePage
 import 'sign_up_screen.dart'; // Import the new sign-up screen
 
@@ -40,7 +40,7 @@ void _showErrorDialog(BuildContext context, String message) {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // final auth = FirebaseAuth.instance;
+  final auth = FirebaseAuth.instance;
   late String email;
   late String pass;
 
@@ -51,14 +51,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void checkCurrentUser() async {
-    // If using Firebase, you'd do something like:
-    // var user = FirebaseAuth.instance.currentUser;
+    // Using Firebase Auth to check current user
+    var user = FirebaseAuth.instance.currentUser;
     // If 'user' is not null, they're logged in => push to Home screen
-    var user = email; // Just a placeholder in your example
-    if (user == email) {
+    if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => MyHomePage()),
+        MaterialPageRoute(builder: (context) => const MyHomePage()),
       );
     }
   }
@@ -174,16 +173,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: ElevatedButton(
                         onPressed: () async {
                           try {
-                            // Placeholder login logic
+                            // Firebase login logic
                             if (email.isNotEmpty && pass.isNotEmpty) {
+                              await auth.signInWithEmailAndPassword(
+                                email: email,
+                                password: pass,
+                              );
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => MyHomePage(),
+                                  builder: (context) => const MyHomePage(),
                                 ),
                               );
                             } else {
-                              throw Exception("Invalid credentials!");
+                              throw Exception("Please enter email and password");
                             }
                           } catch (e) {
                             _showErrorDialog(context, e.toString());
