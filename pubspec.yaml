@@ -54,6 +54,7 @@ dev_dependencies:
   connectivity_plus: ^5.0.2
   awesome_dialog: ^3.2.0
   mobile_scanner: ^6.0.7
+  mqtt_client: ^9.8.1
 
 
   # The "flutter_lints" package below contains a set of recommended lints to

@@ -1,32 +1,35 @@
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class capteurScreen extends StatefulWidget {
-
-  const capteurScreen({super.key});
+class CapteurScreen extends StatefulWidget {
+  const CapteurScreen({super.key});
 
   @override
-  State<capteurScreen> createState() => _capteurScreenState();
+  State<CapteurScreen> createState() => _CapteurScreenState();
 }
 
-class _capteurScreenState extends State<capteurScreen> {
+class _CapteurScreenState extends State<CapteurScreen> {
   int? _selectedSensorIndex;
   bool isLoading = true;
   String humidityValue = '';
-  String  soil_moistureValue = '';
-  String  temperatureValue = '';
-  String  water_levelValue = '';
+  String soilMoistureValue = '';
+  String temperatureValue = '';
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  late MqttServerClient client;
+  final String mqttBroker = 'broker.hivemq.com';
+  final String topic = 'esp32/soilMoisture';
+
   @override
   void initState() {
     super.initState();
-  //  initializeNotifications();
-   // getHumidity();
-   // getsoil_moisture();
-  //  gettemperature();
- //   getwater_level();
-
+    initializeNotifications();
+    connectToMQTT();
+    fetchWeatherData();
   }
 
   void initializeNotifications() async {
@@ -34,14 +37,14 @@ class _capteurScreenState extends State<capteurScreen> {
     final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
+
   Future<void> showNotification(String title, String body) async {
     const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'your channel id',
-      'your channel name',
-      channelDescription: 'your channel description',
+      'your_channel_id',
+      'your_channel_name',
+      channelDescription: 'your_channel_description',
       importance: Importance.max,
       priority: Priority.high,
-      ticker: 'ticker',
     );
     const NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
     await flutterLocalNotificationsPlugin.show(
@@ -49,69 +52,94 @@ class _capteurScreenState extends State<capteurScreen> {
       title,
       body,
       notificationDetails,
-      payload: 'XX',
     );
   }
 
+  Future<void> fetchWeatherData() async {
+    const String apiKey = '50687adfdf95597843aa5ebebd593abb'; // Your OpenWeather API key
+    const String cityName = 'Agadir'; // Your city name
 
+    final url = Uri.parse('https://api.openweathermap.org/data/2.5/weather?q=$cityName&appid=$apiKey&units=metric');
+    try {
+      final response = await http.get(url);
 
-  //void getHumidity() {
-   // DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/humidity");
-   // reference.onValue.listen((event) {
-    //  setState(() {
-    //    humidityValue = event.snapshot.value.toString();
-    //    isLoading = false;
-        // Check if humidity is low (e.g., less than 30%)
-     //   if (humidityValue.isNotEmpty && double.parse(humidityValue) < 30) {
-     //     showNotification('Low Humidity', 'The humidity level is low.');
-     //   }
-     // });
-   // });
- // }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          temperatureValue = data['main']['temp'].toString();
+          humidityValue = data['main']['humidity'].toString();
+          isLoading = false;
+        });
+      } else {
+        print('Failed to fetch weather data');
+      }
+    } catch (e) {
+      print('Error fetching weather data: $e');
+    }
+  }
 
-  //void getsoil_moisture() {
- //   DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/soil_moisture");
-   // reference.onValue.listen((event) {
-  //    setState(() {
-   //     if (soil_moistureValue.isNotEmpty && double.parse(soil_moistureValue) == 0) {
-  //        showNotification('soil moisture', 'Your plante need water');
-   //     }
- //       soil_moistureValue = event.snapshot.value.toString();
-  //      isLoading = false;
+  Future<void> connectToMQTT() async {
+    client = MqttServerClient(mqttBroker, '');
+    client.port = 1883;
+    client.logging(on: false);
+    client.keepAlivePeriod = 20;
+    client.onDisconnected = onDisconnected;
+    client.onConnected = onConnected;
+    client.onSubscribed = onSubscribed;
 
-   // });
-  //  });
- // }
- // void gettemperature() {
- //   DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/temperature");
- //   reference.onValue.listen((event) {
-     // setState(() {
-  //      temperatureValue = event.snapshot.value.toString();
-  //      isLoading = false;
- //       if (temperatureValue.isNotEmpty && double.parse(temperatureValue) > 20) {
-   //       showNotification('Temperateur is very high', 'Temperateur is very high you need to irrigation');
-  //      }
-  //    });
- //   });
- // }
- // void getwater_level() {
-  //  DatabaseReference reference = FirebaseDatabase.instance.ref().child("aquaflow/SENSORS/water_level");
-  //  reference.onValue.listen((event) {
-  //    setState(() {
-  //      water_levelValue = event.snapshot.value.toString();
-   //     isLoading = false;
-  //     if (water_levelValue.isNotEmpty && double.parse(water_levelValue) < 20) {
-    //      showNotification('Low Water Level', 'The water level is low.');
-    //    }
-   //   });
-  //  });
-//  }
-  // Define a function to handle the card tap
-  void _handleCardTap(int index, String sensorImg, String name, String Volt, String Current, String rt, String rh, String type ) {
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier('FlutterClient_${DateTime.now().millisecondsSinceEpoch}')
+        .withWillTopic('willtopic')
+        .withWillMessage('Connection Lost')
+        .startClean()
+        .withWillQos(MqttQos.atLeastOnce);
+    client.connectionMessage = connMess;
+
+    try {
+      await client.connect();
+    } catch (e) {
+      print('MQTT Exception: $e');
+      client.disconnect();
+    }
+
+    if (client.connectionStatus!.state == MqttConnectionState.connected) {
+      print('Connected to MQTT broker');
+      client.subscribe(topic, MqttQos.atMostOnce);
+      client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
+        final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
+        final String pt = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        print('MQTT Data Received: $pt');
+
+        setState(() {
+          soilMoistureValue = pt;
+        });
+
+        // Optional: Trigger notification if soil moisture too low
+        if (int.tryParse(pt) != null && int.parse(pt) < 30) {
+          showNotification('Soil Moisture Low', 'Current moisture is $pt%');
+        }
+      });
+    } else {
+      print('Failed to connect, status: ${client.connectionStatus}');
+    }
+  }
+
+  void onConnected() {
+    print('Connected');
+  }
+
+  void onDisconnected() {
+    print('Disconnected');
+  }
+
+  void onSubscribed(String topic) {
+    print('Subscribed to $topic');
+  }
+
+  void _handleCardTap(int index, String sensorImg, String name, String Volt, String Current, String rt, String rh, String type) {
     setState(() {
       _selectedSensorIndex = index;
     });
-    // Show the sensor details modal
     showDialog(
       context: context,
       builder: (context) {
@@ -127,53 +155,41 @@ class _capteurScreenState extends State<capteurScreen> {
               ),
               Text(
                 'Sensor $index :  $name',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               RichText(
                 text: TextSpan(
                   style: DefaultTextStyle.of(context).style,
-                  children:  <TextSpan>[
-                    const TextSpan(
-                        text: 'operating voltage : ',
-                        style:
-                        TextStyle(fontWeight: FontWeight.bold, height: 2)),
-                    TextSpan(text: '$Volt'),
+                  children: <TextSpan>[
+                    const TextSpan(text: 'Operating voltage: ', style: TextStyle(fontWeight: FontWeight.bold, height: 2)),
+                    TextSpan(text: Volt),
                   ],
                 ),
               ),
               RichText(
                 text: TextSpan(
                   style: DefaultTextStyle.of(context).style,
-                  children:  <TextSpan>[
-                    TextSpan(
-                        text: 'sensor type : ',
-                        style:
-                        TextStyle(fontWeight: FontWeight.bold, height: 2)),
-                    TextSpan(text: '$type'),
+                  children: <TextSpan>[
+                    const TextSpan(text: 'Sensor type: ', style: TextStyle(fontWeight: FontWeight.bold, height: 2)),
+                    TextSpan(text: type),
                   ],
                 ),
               ),
               RichText(
                 text: TextSpan(
                   style: DefaultTextStyle.of(context).style,
-                  children:  <TextSpan>[
-                    TextSpan(
-                        text: 'range temperature : ',
-                        style:
-                        TextStyle(fontWeight: FontWeight.bold, height: 2)),
-                    TextSpan(text: '$rt'),
+                  children: <TextSpan>[
+                    const TextSpan(text: 'Range temperature: ', style: TextStyle(fontWeight: FontWeight.bold, height: 2)),
+                    TextSpan(text: rt),
                   ],
                 ),
               ),
               RichText(
                 text: TextSpan(
                   style: DefaultTextStyle.of(context).style,
-                  children:  <TextSpan>[
-                    TextSpan(
-                        text: 'range humidity : ',
-                        style:
-                        TextStyle(fontWeight: FontWeight.bold, height: 2)),
-                    TextSpan(text: '$rh'),
+                  children: <TextSpan>[
+                    const TextSpan(text: 'Range humidity: ', style: TextStyle(fontWeight: FontWeight.bold, height: 2)),
+                    TextSpan(text: rh),
                   ],
                 ),
               ),
@@ -187,7 +203,7 @@ class _capteurScreenState extends State<capteurScreen> {
                   _selectedSensorIndex = null;
                 });
               },
-              child: Text('Close'),
+              child: const Text('Close'),
             ),
           ],
         );
@@ -198,167 +214,115 @@ class _capteurScreenState extends State<capteurScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    "Les Capteurs Actuelle",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-                  )),
-              Card(
-                elevation: 4.0,
-                child: InkWell(
-                  onTap: () =>
-                      _handleCardTap(
-                          0,
-                          "assets/images/dht11.png",
-                          "Temperature",
-                          "3.5V to 5.5V",
-                          "0.3mA to 60uA",
-                          "0°C to 50°C",
-                          "20% to 90%",
-                          "Serial "),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ListTile(
-                      title: const Text(
-                        "temperature",
-                        style: TextStyle(
-                          fontSize: 20,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'temperature-sensor',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      leading: Image.asset(
-                          'assets/images/temperature-sensor.png',
-                          height: 200),
-                      trailing: isLoading
-                          ? const CircularProgressIndicator()
-                          : humidityValue == null
-                          ? const Text('not available')
-                          : Text(temperatureValue + "°C",
-                          style: const TextStyle(
-                              fontSize: 25, fontWeight: FontWeight.bold)),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "Les Capteurs Actuels",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                )),
+            Card(
+              elevation: 4.0,
+              child: InkWell(
+                onTap: () => _handleCardTap(
+                    0,
+                    "assets/images/temperature-sensor.png",
+                    "Temperature",
+                    "3.5V to 5.5V",
+                    "0.3mA to 60uA",
+                    "0°C to 50°C",
+                    "20% to 90%",
+                    "Serial"),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListTile(
+                    title: const Text(
+                      "Temperature",
+                      style: TextStyle(fontSize: 20),
                     ),
+                    subtitle: const Text(
+                      'Temperature Sensor',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    leading: Image.asset('assets/images/temperature-sensor.png', height: 60),
+                    trailing: isLoading
+                        ? const CircularProgressIndicator()
+                        : Text('$temperatureValue°C',
+                        style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
-              Card(
-                elevation: 4.0,
-                child: InkWell(
-                  onTap: () =>
-                      _handleCardTap(
-                          1,
-                          "assets/images/dht11.png",
-                          "Humidity",
-                          "3.3V to 5V",
-                          "35mA",
-                          " -40℃~ +60℃",
-                          "0% to 950%",
-                          "analog"),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ListTile(
-                      title: const Text("Humidity",
-                          style: TextStyle(
-                            fontSize: 20,
-                          )),
-                      subtitle: Text(
-                        'Humidity Sensor',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      leading: Image.asset('assets/images/humidity-sensor.png',
-                          height: 200),
-                      trailing:isLoading
-                          ? const CircularProgressIndicator()
-                          : humidityValue == null
-                          ? const Text('not available')
-                          : Text(humidityValue + '%',
-                          style: const TextStyle(
-                              fontSize: 25, fontWeight: FontWeight.bold)),
+            ),
+            Card(
+              elevation: 4.0,
+              child: InkWell(
+                onTap: () => _handleCardTap(
+                    1,
+                    "assets/images/humidity-sensor.png",
+                    "Humidity",
+                    "3.3V to 5V",
+                    "35mA",
+                    " -40℃~ +60℃",
+                    "0% to 95%",
+                    "Analog"),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListTile(
+                    title: const Text(
+                      "Humidity",
+                      style: TextStyle(fontSize: 20),
                     ),
+                    subtitle: const Text(
+                      'Humidity Sensor',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    leading: Image.asset('assets/images/humidity-sensor.png', height: 60),
+                    trailing: isLoading
+                        ? const CircularProgressIndicator()
+                        : Text('$humidityValue%',
+                        style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
-              Card(
-                elevation: 4.0,
-                child: InkWell(
-                  onTap: () =>
-                      _handleCardTap(
-                          1,
-                          "assets/images/meter.png",
-                          "Soil Moisture",
-                          "3.3V to 5V",
-                          "35mA",
-                          " -40℃~ +60℃",
-                          "0% to 950%",
-                          "analog"),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ListTile(
-                      title: const Text("Soil Moisture",
-                          style: TextStyle(
-                            fontSize: 20,
-                          )),
-                      subtitle: Text(
-                        'Soil Moisture Sensor',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      leading: Image.asset('assets/images/meter.png',
-                          height: 200),
-                      trailing: isLoading
-                          ? const CircularProgressIndicator()
-                          : humidityValue == null
-                          ? const Text('not available')
-                          : Text(soil_moistureValue + '%',
-                          style: const TextStyle(
-                              fontSize: 25, fontWeight: FontWeight.bold)),
-
+            ),
+            Card(
+              elevation: 4.0,
+              child: InkWell(
+                onTap: () => _handleCardTap(
+                    2,
+                    "assets/images/meter.png",
+                    "Soil Moisture",
+                    "3.3V to 5V",
+                    "35mA",
+                    "-40℃~ +60℃",
+                    "0% to 95%",
+                    "Analog"),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListTile(
+                    title: const Text(
+                      "Soil Moisture",
+                      style: TextStyle(fontSize: 20),
                     ),
+                    subtitle: const Text(
+                      'Soil Moisture Sensor',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    leading: Image.asset('assets/images/meter.png', height: 60),
+                    trailing: soilMoistureValue.isEmpty
+                        ? const CircularProgressIndicator()
+                        : Text('$soilMoistureValue%',
+                        style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
-              Card(
-                elevation: 4.0,
-                child: InkWell(
-                  onTap: () =>
-                      _handleCardTap(
-                          3,
-                          "assets/images/water.png",
-                          "Water-level",
-                          "5V",
-                          "20mA",
-                          "10°C to -30°C",
-                          "10% to 90%",
-                          "analog"),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ListTile(
-                      title:
-                      const Text("water-level", style: TextStyle(fontSize: 20)),
-                      leading:
-                      Image.asset('assets/images/water-level.png', height: 200),
-                      subtitle: Text(
-                        'Water Level Sensor',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      trailing: Text(water_levelValue + "%",
-
-                          style: const TextStyle(
-                              fontSize: 25, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-              ),
-
-            ],
-          ),
-        )
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

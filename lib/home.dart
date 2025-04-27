@@ -24,7 +24,7 @@ class _MyHomePageState extends State<MyHomePage> {
     const PlantScreen(),    // index 0
     VanesScreen(),          // index 1
     HistoricScreen(),       // index 2
-    capteurScreen(),        // index 3
+    CapteurScreen(),        // index 3
     ReservoirScreen(),      // index 4
     const KidsScreen(),     // index 5 ✅
   ];
