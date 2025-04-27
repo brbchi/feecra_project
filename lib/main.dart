@@ -1,32 +1,38 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 import 'home.dart';
 import 'login.dart';
 
-void main() async {
-  //WidgetsFlutterBinding.ensureInitialized();
-  // Enable persistence
-  //await Firebase.initializeApp();
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();                 // ⚡️ Initialise Firebase
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Irrigation Intelligente',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: ThemeData(primarySwatch: Colors.green),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),  // ↔️ État auth
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.active) {
+            final user = snapshot.data;
+            return user == null ? const LoginScreen()
+                : const MyHomePage();
+          }
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        },
       ),
-      home: MyHomePage(),
     );
   }
 }
