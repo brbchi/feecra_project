@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Uncommented for Firebase
 import 'home.dart'; // Your HomePage
 import 'sign_up_screen.dart'; // Import the new sign-up screen
+import 'package:google_sign_in/google_sign_in.dart';
 
 void main() => runApp(const MaterialApp(
   debugShowCheckedModeBanner: false,
@@ -69,7 +70,11 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: <Widget>[
+
+            // ------------------------------------------------
             // Top background image & "Login" text
+            // ------------------------------------------------
+
             SizedBox(
               height: 400,
               child: Stack(
@@ -99,7 +104,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // Fields and buttons
+            // ------------------------------------------------
+            // INPUT FORM FIELDS
+            // ------------------------------------------------
+
             Padding(
               padding: const EdgeInsets.all(30.0),
               child: Column(
@@ -154,9 +162,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 10),
 
-                  // Login Button
+                  // ------------------------------------------------
+                  // LOGIN BUTTON
+                  // ------------------------------------------------
+
                   Container(
                     height: 50,
                     decoration: BoxDecoration(
@@ -209,7 +220,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 10),
 
+                  // ------------------------------------------------
                   // SIGN-UP BUTTON
+                  // ------------------------------------------------
+
                   SizedBox(
                     width: 400,
                     height: 45,
@@ -230,12 +244,72 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 70),
+                  const SizedBox(height: 10),
 
-                  // Bottom image
+                  // ------------------------------------------------
+                  // Login With Google BUTTON
+                  // ------------------------------------------------
+
+                  SizedBox(
+                    width: 400,
+                    height: 45,
+                    child: OutlinedButton(
+                        onPressed: () async {
+                          try {
+                            final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+                            if (googleUser == null) {
+                              // The user canceled the sign-in
+                              return;
+                            }
+
+                            final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+                            final credential = GoogleAuthProvider.credential(
+                              accessToken: googleAuth.accessToken,
+                              idToken: googleAuth.idToken,
+                            );
+
+                            // Sign in with credential
+                            await FirebaseAuth.instance.signInWithCredential(credential);
+
+                            // Navigate to home after successful login
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const MyHomePage()),
+                            );
+                          } catch (e) {
+                            _showErrorDialog(context, e.toString());
+                          }
+                        },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/images/google_logo.png',  // <-- your local Google logo asset
+                            height: 24.0,
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          const Text(
+                            "Login with Google",
+                            style: TextStyle(fontSize: 16),
+                          )
+                        ],
+                      )
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // ------------------------------------------------
+                  // Universia Logo
+                  // ------------------------------------------------
+
                   const Image(
                     image: AssetImage('assets/images/7.jpg'),
                   ),
+
                 ],
               ),
             ),

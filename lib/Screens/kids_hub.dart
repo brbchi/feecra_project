@@ -12,8 +12,43 @@ class KidsHub extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Farm IT – Kids Zone'),
-          backgroundColor: Colors.green,
+          title: Stack(
+            children: <Widget>[
+              // Stroke Text
+              Text(
+                'FarmIT - Kids Zone',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  foreground: Paint()
+                    ..style = PaintingStyle.stroke
+                    ..strokeWidth = 3
+                    ..color = Colors.white38, // Stroke Color
+                ),
+              ),
+              // Fill Text
+              Text(
+                'FarmIT - Kids Zone',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white, // Fill Color
+                ),
+              ),
+            ],
+          ),
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF2E7D32), // Dark Green
+                  Color(0xFF66BB6A), // Light Green
+                ],
+              ),
+            ),
+          ),
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.menu_book), text: 'Apprendre'),
