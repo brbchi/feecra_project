@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class PlantScreen extends StatefulWidget {
@@ -8,43 +10,88 @@ class PlantScreen extends StatefulWidget {
 }
 
 class _PlantScreenState extends State<PlantScreen> {
-  /// Store plants as maps with name, image, humidity, season, and esp32.
-  final List<Map<String, dynamic>> _plants = [
-    {
-      'name': 'Tomato',
-      'image': 'assets/images/Tomato.jpg',
-      'humidity': 70.0,
-      'season': 'Summer',
-      'esp32': 'ESP32 #1',
-    },
-    {
-      'name': 'Spearmint',
-      'image': 'assets/images/spearmint.jpg',
-      'humidity': 45.0,
-      'season': 'Spring',
-      'esp32': 'ESP32 #2',
-    },
-    {
-      'name': 'Sweet Potato',
-      'image': 'assets/images/sweet-potato.jpg',
-      'humidity': 60.0,
-      'season': 'Autumn',
-      'esp32': 'ESP32 #1',
-    },
-  ];
+  final user = FirebaseAuth.instance.currentUser;
+  List<Map<String, dynamic>> _plants = [];
 
-  /// This method shows a dialog for adding a new plant with season, recommended plant, and ESP32.
+  @override
+  void initState() {
+    super.initState();
+    fetchUserGarden();
+  }
+
+  // ------------------------------------------------------------------------
+  // Function That Fetch User ID Since DataBase Is Separated By User ID
+  // ------------------------------------------------------------------------
+  Future<void> fetchUserGarden() async {
+    final gardenRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(user!.uid)
+        .collection('Garden');
+
+    final snapshot = await gardenRef.get();
+    setState(() {
+      _plants = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id; // Save doc ID for deleting
+        return data;
+      }).toList();
+    });
+  }
+
+  // ------------------------------------------------------------------------
+  // Function For Adding Plants, List Of Plants isn't in Database but
+  // Information once added will be !!
+  // ------------------------------------------------------------------------
   Future<void> _addNewPlant() async {
     final seasons = ['Spring', 'Summer', 'Autumn', 'Winter'];
-    final recommendedPlants = ['Tomato', 'Cucumber', 'Pepper', 'Lettuce'];
+    final Map<String, List<String>> recommendedPlantsPerSeason = {
+      'Spring': [
+        'Carrot',
+        'Lettuce',
+        'Peas',
+        'Spinach',
+        'Broccoli',
+        'Cauliflower',
+        'Beets',
+      ],
+      'Summer': [
+        'Tomato',
+        'Cucumber',
+        'Zucchini',
+        'Eggplant',
+        'Bell Pepper',
+        'Corn',
+        'Green Beans',
+      ],
+      'Autumn': [
+        'Garlic',
+        'Onion',
+        'Radish',
+        'Kale',
+        'Turnips',
+        'Brussels Sprouts',
+        'Cabbage',
+      ],
+      'Winter': [
+        'Winter Lettuce',
+        'Spinach',
+        'Kale',
+        'Swiss Chard',
+        'Broccoli',
+        'Garlic',
+      ],
+    };
+
+    // ------------------------------------------------------------------------
+    //This is Temp, ESP Need to be added Via CodeBar
+    // ------------------------------------------------------------------------
     final espDevices = ['ESP32 #1', 'ESP32 #2', 'ESP32 #3'];
 
-    // Temporary variables for the user’s choices
     String? _selectedSeason = seasons.first;
-    String? _selectedPlant = recommendedPlants.first;
+    List<String> _availablePlants = recommendedPlantsPerSeason[_selectedSeason]!;
+    String? _selectedPlant = _availablePlants.first;
     String? _selectedEsp32 = espDevices.first;
 
-    // Show a dialog that lets the user pick from dropdowns
     final bool? userConfirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -56,11 +103,18 @@ class _PlantScreenState extends State<PlantScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Season dropdown
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Season',
+                    if (_selectedPlant != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Image.asset(
+                          'assets/images/'+_selectedPlant!+'.png',
+                          height: 100,
+                          fit: BoxFit.contain,
+                        ),
                       ),
+
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Season'),
                       value: _selectedSeason,
                       items: seasons.map((s) {
                         return DropdownMenuItem(value: s, child: Text(s));
@@ -68,18 +122,17 @@ class _PlantScreenState extends State<PlantScreen> {
                       onChanged: (val) {
                         setStateDialog(() {
                           _selectedSeason = val;
+                          _availablePlants = recommendedPlantsPerSeason[_selectedSeason] ?? [];
+                          _selectedPlant = _availablePlants.isNotEmpty ? _availablePlants.first : null;
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
 
-                    // Recommended Plant dropdown
+                    const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Recommended Plant',
-                      ),
-                      value: _selectedPlant,
-                      items: recommendedPlants.map((plant) {
+                      decoration: const InputDecoration(labelText: 'Recommended Plant'),
+                      value: _availablePlants.first,
+                      items: _availablePlants.map((plant) {
                         return DropdownMenuItem(
                           value: plant,
                           child: Text(plant),
@@ -92,12 +145,8 @@ class _PlantScreenState extends State<PlantScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // ESP32 dropdown
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Select ESP32',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Select ESP32'),
                       value: _selectedEsp32,
                       items: espDevices.map((esp) {
                         return DropdownMenuItem(value: esp, child: Text(esp));
@@ -117,9 +166,7 @@ class _PlantScreenState extends State<PlantScreen> {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop(true);
-                  },
+                  onPressed: () => Navigator.of(ctx).pop(true),
                   child: const Text('Add'),
                 ),
               ],
@@ -129,28 +176,45 @@ class _PlantScreenState extends State<PlantScreen> {
       },
     );
 
-    // If user pressed Add (true) and we have valid selections, create the new plant
     if (userConfirmed == true &&
         _selectedSeason != null &&
         _selectedPlant != null &&
         _selectedEsp32 != null) {
-      setState(() {
-        _plants.add({
-          'name': _selectedPlant,
-          'image': 'assets/images/plant.png', // Replace with your placeholder
-          'humidity': 50.0,
-          'season': _selectedSeason,
-          'esp32': _selectedEsp32,
-        });
+      final gardenRef = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user!.uid)
+          .collection('Garden');
+
+      await gardenRef.add({
+        'name': _selectedPlant,
+        'season': _selectedSeason,
+        'esp32': _selectedEsp32,
+        'image': 'assets/images/'+_selectedPlant!+'.png', // Placeholder image
       });
+
+      fetchUserGarden();
     }
   }
 
-  /// Builds each grid tile: image, name, humidity circle, season, esp32 info, and delete button.
+  // ------------------------------------------------------------------------
+  // For Deleting The Plant From user and DataBase
+  // ------------------------------------------------------------------------
+  Future<void> _deletePlant(String docId) async {
+    final gardenRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(user!.uid)
+        .collection('Garden');
+
+    await gardenRef.doc(docId).delete();
+    fetchUserGarden();
+  }
+
+  // ------------------------------------------------------------------------
+  // Plant Grid For showcasing the Plants
+  // ------------------------------------------------------------------------
   Widget _buildPlantTile(Map<String, dynamic> plant, int index) {
     return Stack(
       children: [
-        // Main card with image & text
         Card(
           margin: const EdgeInsets.all(8),
           shape: RoundedRectangleBorder(
@@ -158,11 +222,10 @@ class _PlantScreenState extends State<PlantScreen> {
           ),
           elevation: 3,
           child: Padding(
-            padding: const EdgeInsets.only(top: 8, left: 8, bottom: 8, right: 8),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // The image area
                 Expanded(
                   child: Center(
                     child: Image.asset(
@@ -172,7 +235,6 @@ class _PlantScreenState extends State<PlantScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Plant name
                 Text(
                   plant['name'] ?? '',
                   style: const TextStyle(
@@ -180,90 +242,51 @@ class _PlantScreenState extends State<PlantScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // Season
-                Text(
-                  'Season: ${plant['season']}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                // ESP32
-                Text(
-                  'ESP32: ${plant['esp32']}',
-                  style: const TextStyle(fontSize: 14),
-                ),
+                Text('Season: ${plant['season']}'),
+                Text('ESP32: ${plant['esp32']}'),
               ],
             ),
           ),
         ),
-
-        // Delete icon in the top-right corner
         Positioned(
           top: 4,
           right: 4,
           child: IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () {
-              setState(() {
-                _plants.removeAt(index);
-              });
-            },
-          ),
-        ),
-
-        // A circular badge at the bottom-right with humidity
-        Positioned(
-          bottom: 15,
-          right: 10,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.blueAccent,
-            ),
-            child: Center(
-              child: Text(
-                '${plant['humidity'].toInt()}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            onPressed: () => _deletePlant(plant['id']),
           ),
         ),
       ],
     );
   }
 
+  // ------------------------------------------------------------------------
+  // Main Body
+  // ------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /// A colorful gradient background
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.green.shade300,
-              Colors.blue.shade300,
+              Colors.brown.shade600,
+              Colors.brown.shade300,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        /// Use SafeArea so we don't overlap system bars
         child: SafeArea(
           child: Column(
             children: [
-              // ----------------------------
-              // Header
-              // ----------------------------
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     const Icon(Icons.eco, size: 32, color: Colors.white),
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       'My Garden',
                       style: TextStyle(
                         color: Colors.white,
@@ -274,27 +297,21 @@ class _PlantScreenState extends State<PlantScreen> {
                   ],
                 ),
               ),
-
-              // ----------------------------
-              // Grid of Plants
-              // ----------------------------
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
+                  decoration: BoxDecoration(
+                    color: Colors.brown[300],
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: GridView.builder(
                       itemCount: _plants.length,
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,       // 2 columns
-                        crossAxisSpacing: 8.0,
-                        mainAxisSpacing: 8.0,
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
                         childAspectRatio: 0.8,
                       ),
                       itemBuilder: (ctx, index) {
@@ -309,10 +326,6 @@ class _PlantScreenState extends State<PlantScreen> {
           ),
         ),
       ),
-
-      // ----------------------------
-      // FAB to add a new plant
-      // ----------------------------
       floatingActionButton: FloatingActionButton(
         onPressed: _addNewPlant,
         backgroundColor: Colors.green,

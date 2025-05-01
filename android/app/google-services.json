@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1064423487723",
-    "project_id": "feecra-67e28",
-    "storage_bucket": "feecra-67e28.firebasestorage.app"
+    "project_number": "1082974292756",
+    "project_id": "farm-it-a207c",
+    "storage_bucket": "farm-it-a207c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1064423487723:android:87abbe79430dd9e13c66ae",
+        "mobilesdk_app_id": "1:1082974292756:android:834e1da6fde7f832d95001",
         "android_client_info": {
           "package_name": "com.example.feecra_project"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDITxAgweY8Gs45peua8YP_ACUGGtOwdic"
+          "current_key": "AIzaSyD3hUfJiICFTvzRTeydbh9BXSO-PXWqQcU"
         }
       ],
       "services": {

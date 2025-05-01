@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -148,10 +149,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: SizedBox(
                       width: 400,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Your sign-up logic goes here.
-                          // For now, just pop back to the login
-                          Navigator.pop(context);
+                        onPressed: () async {
+                          // Validate email with regex
+                          final emailRegex = RegExp(r'^[a-zA-Z0-9]+@[a-zA-Z]+\.[a-zA-Z]{2,4}$');
+                          if (!emailRegex.hasMatch(email)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Please enter a valid email address')),
+                            );
+                            return;
+                          }
+
+                          // Validate password length
+                          if (pass.length < 6) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Password must be at least 6 characters long')),
+                            );
+                            return;
+                          }
+
+                          // Check if passwords match
+                          if (pass != confirmPass) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Passwords do not match')),
+                            );
+                            return;
+                          }
+
+                          try {
+                            UserCredential userCredential = await FirebaseAuth.instance
+                                .createUserWithEmailAndPassword(
+                              email: email.trim(),
+                              password: pass.trim(),
+                            );
+
+                            await userCredential.user!.sendEmailVerification();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Account created! Please verify your email.')),
+                            );
+
+                            Navigator.pop(context);
+                          } on FirebaseAuthException catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.message ?? 'Signup failed')),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
